@@ -13,15 +13,15 @@
 //    2. ce début est retourné, puis envoyé dans une grande reverb (FDN 8 lignes, 100 % wet) ;
 //    3. la queue de la reverb est retournée à son tour : elle monte et finit exactement
 //       là où la phrase commence ;
-//    4. effets en un clic sur la montée (PHONE, LO-FI, CHORUS, SHIMMER, DRIVE, TREMOLO),
+//    4. effets en un clic sur la montée (PHONE, LO-FI, CHORUS, REVERB, DRIVE, TREMOLO),
 //       courbe de montée, normalisation.
 //  Tout est calculé hors du thread audio (thread de rendu du processeur).
 //==============================================================================
 namespace backdraft
 {
-    enum Fx { fxPhone = 0, fxLofi, fxChorus, fxShimmer, fxDrive, fxTremolo, numFx };
-    inline const char* fxName (int i) { static const char* n[numFx] = { "PHONE", "LO-FI", "CHORUS", "SHIMMER", "DRIVE", "TREMOLO" }; return n[i]; }
-    inline const char* fxId (int i)   { static const char* n[numFx] = { "phone", "lofi", "chorus", "shimmer", "drive", "tremolo" }; return n[i]; }
+    enum Fx { fxPhone = 0, fxLofi, fxChorus, fxReverb, fxDrive, fxTremolo, numFx };
+    inline const char* fxName (int i) { static const char* n[numFx] = { "PHONE", "LO-FI", "CHORUS", "REVERB", "DRIVE", "TREMOLO" }; return n[i]; }
+    inline const char* fxId (int i)   { static const char* n[numFx] = { "phone", "lofi", "chorus", "reverb", "drive", "tremolo" }; return n[i]; }
 
     // durées proposées par le potard (en temps)
     constexpr int numLengths = 6;
@@ -169,32 +169,6 @@ namespace backdraft
         double modPhase = 0;
     };
 
-    //------------------------------------------------------------------ transposition par grains (octave au-dessus) pour le SHIMMER
-    inline void pitchUpOctave (const std::vector<float>& in, std::vector<float>& out, double sr)
-    {
-        const int n = (int) in.size();
-        out.assign ((size_t) n, 0.0f);
-        const int grain = juce::jmax (64, (int) (0.070 * sr));
-        // deux têtes de lecture décalées d'un demi-grain, fenêtres en cosinus (somme constante)
-        for (int head = 0; head < 2; ++head)
-        {
-            for (int start = -(head * grain / 2); start < n; start += grain)
-            {
-                for (int k = 0; k < grain; ++k)
-                {
-                    const int o = start + k;
-                    if (o < 0 || o >= n) continue;
-                    const double w = 0.5 - 0.5 * std::cos (juce::MathConstants<double>::twoPi * k / grain);
-                    const double src = (double) start + 2.0 * k;                   // lecture à double vitesse
-                    const int s0 = (int) src;
-                    if (s0 < 0 || s0 + 1 >= n) continue;
-                    const double fr = src - s0;
-                    out[(size_t) o] += (float) (w * (in[(size_t) s0] * (1 - fr) + in[(size_t) s0 + 1] * fr));
-                }
-            }
-        }
-    }
-
     //------------------------------------------------------------------ résultat d'un rendu
     struct Riser
     {
@@ -301,18 +275,9 @@ namespace backdraft
             for (int i = 0; i < fo; ++i)
                 head[c][(size_t) (H - 1 - i)] *= (float) (0.5 - 0.5 * std::cos (juce::MathConstants<double>::pi * i / juce::jmax (1, fo)));
 
-        // 3. attaque retournée + shimmer (octave dans la reverb)
+        // 3. attaque retournée
         std::vector<float> rev[2];
         for (int c = 0; c < 2; ++c) { rev[c].assign (head[c].rbegin(), head[c].rend()); }
-        if (st.fx[fxShimmer])
-        {
-            for (int c = 0; c < 2; ++c)
-            {
-                std::vector<float> up;
-                pitchUpOctave (rev[c], up, sr);
-                for (size_t i = 0; i < rev[c].size(); ++i) rev[c][i] = rev[c][i] * 0.8f + up[i] * 0.75f;
-            }
-        }
         if (abort.load()) return nullptr;
 
         // 4. reverb 100 % wet ; on garde la queue (L échantillons) après l'attaque retournée
@@ -421,6 +386,27 @@ namespace backdraft
                 chR[i] = (float) (0.62 * chR[i] + 0.5 * (v1r + v2l) * 0.62);
                 ph += rate;
                 wp = (wp + 1) % maxD;
+            }
+        }
+        if (st.fx[fxReverb])
+        {
+            // reverb « à l'endroit » sur la montée : plus d'espace et de profondeur ; la queue qui dépasserait
+            // la fin du riser est coupée, pour que la montée finisse toujours au début de la phrase
+            Fdn room;
+            room.prepare (sr, 2.6, 1.0, 0.38);
+            const int pd = (int) (0.022 * sr);
+            std::vector<float> pl ((size_t) pd + 1, 0.0f), pr ((size_t) pd + 1, 0.0f);
+            int pp = 0;
+            for (int i = 0; i < L; ++i)
+            {
+                const float inL = pl[(size_t) pp], inR = pr[(size_t) pp];
+                pl[(size_t) pp] = chL[i]; pr[(size_t) pp] = chR[i];
+                pp = (pp + 1) % (pd + 1);
+                double wl, wr;
+                room.process (inL, inR, wl, wr);
+                chL[i] = (float) (0.78 * chL[i] + 1.15 * wl);
+                chR[i] = (float) (0.78 * chR[i] + 1.15 * wr);
+                if ((i & 0x7fff) == 0 && abort.load()) return nullptr;
             }
         }
         if (st.fx[fxDrive])

@@ -151,7 +151,7 @@ int main()
     ed->setSize (680, 700); for (int k = 0; k < 6; ++k) { ed->timerCallback(); pump (20); }
     snap (*ed, "ui_75.png", 1.0f);
     // effets allumés + écoute en cours
-    for (auto id : { "chorus", "shimmer", "drive", "tremolo" }) p.apvts.getParameter (id)->setValueNotifyingHost (1.0f);
+    for (auto id : { "chorus", "reverb", "drive", "tremolo" }) p.apvts.getParameter (id)->setValueNotifyingHost (1.0f);
     c0 = p.renderCount.load(); waitRender (p, c0);
     p.toggleListen();
     { AudioBuffer<float> buf (2, 512); MidiBuffer m; for (int k = 0; k < 120; ++k) { buf.clear(); p.processBlock (buf, m); } }

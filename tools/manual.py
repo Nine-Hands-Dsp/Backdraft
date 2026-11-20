@@ -117,7 +117,7 @@ f.append(P("Ce que Backdraft sait faire", "h2"))
 f += bullets(["Capturer ce qui passe sur la piste (<b>CAPTURE</b>) ou charger un fichier audio (<b>IMPORT</b>, ou glisser-déposer sur l'écran).",
               "Calculer le riser : longueur calée sur le tempo du projet, de 1 temps à 8 mesures (potard <b>REVERSE</b>).",
               "Mode <b>VOX</b> avec anti-sifflantes automatique, ou <b>INST</b> pour les instruments.",
-              "Six effets en un clic : PHONE, LO-FI, CHORUS, SHIMMER, DRIVE, TREMOLO.",
+              "Six effets en un clic : PHONE, LO-FI, CHORUS, REVERB, DRIVE, TREMOLO.",
               "Écouter le résultat (<b>LISTEN</b>, <b>LOOP</b>) puis le glisser dans Reaper (<b>DRAG</b>).",
               "13 presets d'usine, vos propres presets, MIDI Learn sur tous les réglages."])
 
@@ -145,7 +145,7 @@ ov = [["N°", "Élément", "Rôle"],
       ["8, 9", "LISTEN, LOOP", "Écoute de la montée puis de la phrase ; LOOP la répète."],
       ["10, 11", "CAPTURE, IMPORT", "Source du riser : la piste en direct ou un fichier audio."],
       ["12", "REVERSE", "Longueur de la montée, en temps et mesures du projet."],
-      ["13", "Effets", "PHONE, LO-FI, CHORUS, SHIMMER, DRIVE, TREMOLO, cumulables."]]
+      ["13", "Effets", "PHONE, LO-FI, CHORUS, REVERB, DRIVE, TREMOLO, cumulables."]]
 f.append(table(ov, [12 * mm, 34 * mm, W - 46 * mm]))
 f.append(PageBreak())
 
@@ -163,7 +163,7 @@ f.append(P("Le riser est recalculé tout seul après chaque changement (phrase, 
 # ---------- 5. Réglages ----------
 f.append(P("5. Les réglages", "h1"))
 f.append(P("REVERSE", "h2"))
-f.append(P("Le grand potard choisit la longueur de la montée : <b>1 BEAT, 2 BEATS, 1 BAR, 2 BARS, 4 BARS, 8 BARS</b> (une mesure = 4 temps). La durée suit le tempo du projet : 4 BARS à 120 BPM = 8 secondes. Glisser verticalement (Maj : réglage fin), molette (un cran par mouvement), double-clic : 4 BARS. La reverb est réglée d'après cette longueur pour que sa queue garde du corps sur toute la montée."))
+f.append(P("Le grand potard choisit la longueur de la montée : <b>1 BEAT, 2 BEATS, 1 BAR, 2 BARS, 4 BARS, 8 BARS</b> (une mesure = 4 temps). La durée suit le tempo du projet : 4 BARS à 120 BPM = 8 secondes. Le potard est <b>cranté</b> : glissez verticalement, il résiste un peu puis saute au cran suivant (Maj : plus de course par cran) ; molette : un cran par mouvement ; double-clic : 4 BARS. La reverb est réglée d'après cette longueur pour que sa queue garde du corps sur toute la montée."))
 f.append(P("VOX / INST", "h2"))
 f += bullets(["<b>VOX</b> : coupe le grave sous 170 Hz, légère présence, et <b>anti-sifflantes automatique</b> : Backdraft repère les « S », « CH », « T » (énergie au-dessus de 4,8 kHz) et ne baisse les aigus que pendant ces sons, pour qu'ils ne sifflent pas à l'envers dans la montée. Le reste de la phrase garde tout son éclat.",
               "<b>INST</b> : pour une guitare, un piano, un synthé : coupe seulement sous 60 Hz, pas d'anti-sifflantes, reverb un peu plus claire et plus courte."])
@@ -173,22 +173,22 @@ f.append(table([["Effet", "Ce qu'il fait"],
                 ["PHONE", "Bande étroite 420 Hz - 3,1 kHz avec bosse à 1,5 kHz et légère saturation : riser « téléphone » ou radio."],
                 ["LO-FI", "Échantillonnage réduit à 11 kHz, 9 bits, filtre 5,2 kHz : grain de vieux sampler."],
                 ["CHORUS", "Deux voix modulées croisées gauche / droite : montée plus large et plus mouvante."],
-                ["SHIMMER", "Une copie à l'octave supérieure est envoyée dans la reverb : montée scintillante, très aérienne."],
+                ["REVERB", "Reverb à l'endroit (2,6 s, pré-delay 22 ms) ajoutée à la montée : plus d'espace et de profondeur. Sa queue est coupée à la fin du riser, qui finit toujours au début de la phrase."],
                 ["DRIVE", "Saturation qui augmente avec la montée : douce au début, rugueuse à l'arrivée."],
                 ["TREMOLO", "Pulsation qui accélère de 3 à 15 Hz et se creuse en approchant de la phrase : tension maximale avant le drop."]],
                [26 * mm, W - 26 * mm]))
-f.append(P("Les effets se cumulent (ordre : PHONE, LO-FI, CHORUS, DRIVE, TREMOLO ; SHIMMER agit dans la reverb). La montée est toujours normalisée à −1 dBFS crête.", "small"))
+f.append(P("Les effets se cumulent (ordre : PHONE, LO-FI, CHORUS, REVERB, DRIVE, TREMOLO). La montée est toujours normalisée à −1 dBFS crête.", "small"))
 
 # ---------- 6. Écoute et glisser ----------
 f.append(P("6. Écouter et poser le riser", "h1"))
 f.append(side([P("<b>LISTEN</b> joue la montée puis le début de la phrase d'origine (4 s), mélangés au son de la piste, dans la sortie du plugin ; un second clic l'arrête. Un trait blanc suit la lecture et la ligne de fin s'allume quand la phrase arrive. <b>LOOP</b> répète l'écoute."),
                P("<b>DRAG</b> : cliquez sur la pastille DRAG (ou sur la forme d'onde) et faites glisser vers la timeline de Reaper. Le riser est écrit en WAV 24 bits dans <b>Documents/Nine Hands DSP/Backdraft/Risers</b> (nom : preset, longueur, tempo, heure)."),
                P("<b>Placement</b> : la montée finit exactement là où la phrase commence. Posez donc le fichier de façon que sa <b>fin</b> tombe sur le début de la phrase (dans Reaper, alignez le bord droit de l'objet sur l'attaque, ou placez son début une durée REVERSE plus tôt).")],
-              disp_listen, "Écoute en cours, effets CHORUS, SHIMMER, DRIVE et TREMOLO allumés."))
+              disp_listen, "Écoute en cours, effets CHORUS, REVERB, DRIVE et TREMOLO allumés."))
 
 # ---------- 7. MIDI ----------
 f.append(P("7. MIDI et automation", "h1"))
-f += bullets(["Tous les réglages sont automatisables dans le DAW : Reverse length, Mode, Phone, Lo-fi, Chorus, Shimmer, Drive, Tremolo.",
+f += bullets(["Tous les réglages sont automatisables dans le DAW : Reverse length, Mode, Phone, Lo-fi, Chorus, Reverb, Drive, Tremolo.",
               "<b>MIDI Learn</b> : clic droit sur le potard REVERSE, sur VOX / INST ou sur un effet &gt; <b>MIDI Learn</b>, puis bougez le bouton ou la pédale MIDI. La ligne d'état affiche MIDI LEARN puis le CC appris. <b>Clear MIDI</b> retire l'assignation ; menu &gt; MIDI &gt; <b>Clear all MIDI</b> les retire toutes.",
               "Aucun CC n'est assigné par défaut. Les assignations sont sauvegardées avec le projet. Une pédale d'expression est apprise sur toute sa course réelle."])
 
@@ -206,16 +206,16 @@ f.append(P("Flèches de la barre de presets, clic sur son nom, menu &gt; Presets
 f.append(table([["Preset", "Longueur", "Mode", "Effets", "Caractère"],
                 ["Ignition", "4 bars", "VOX", "aucun", "Le riser de référence, propre et ample."],
                 ["Slow Burn", "8 bars", "VOX", "CHORUS", "Très longue montée large, pour une intro."],
-                ["Afterglow", "4 bars", "VOX", "CHORUS, SHIMMER", "Montée lumineuse et scintillante."],
+                ["Afterglow", "4 bars", "VOX", "CHORUS, REVERB", "Montée large et spacieuse."],
                 ["Smoke Signal", "2 bars", "VOX", "PHONE", "Riser téléphone, court et serré."],
                 ["Ember Tape", "4 bars", "VOX", "LO-FI", "Grain de vieux sampler."],
                 ["Flashover", "2 bars", "VOX", "DRIVE, TREMOLO", "Tension saturée qui accélère avant le drop."],
                 ["Ghost Call", "4 bars", "VOX", "PHONE, TREMOLO", "Voix lointaine qui pulse."],
-                ["Halo", "8 bars", "VOX", "SHIMMER", "Nappe aérienne à l'octave."],
-                ["Wildfire", "4 bars", "VOX", "CHORUS, SHIMMER, DRIVE, TREMOLO", "Tout en même temps : riser d'EDM."],
+                ["Halo", "8 bars", "VOX", "REVERB", "Longue nappe aérienne, très spacieuse."],
+                ["Wildfire", "4 bars", "VOX", "CHORUS, REVERB, DRIVE, TREMOLO", "Tout en même temps : riser d'EDM."],
                 ["Quick Spark", "2 beats", "VOX", "aucun", "Aspiration très courte avant un mot."],
                 ["Inst Swell", "4 bars", "INST", "aucun", "Montée naturelle d'un instrument."],
-                ["Inst Cathedral", "8 bars", "INST", "CHORUS, SHIMMER", "Grand espace pour guitare ou piano."],
+                ["Inst Cathedral", "8 bars", "INST", "CHORUS, REVERB", "Grand espace pour guitare ou piano."],
                 ["Inst Furnace", "2 bars", "INST", "DRIVE", "Montée saturée pour riff de guitare."]],
                [25 * mm, 20 * mm, 12 * mm, 46 * mm, W - 103 * mm]))
 

@@ -16,9 +16,9 @@ Riser « reverse reverb » en un clic, VST3 pour Windows et macOS, inspiré d'At
 - **CAPTURE** : enregistre ce qui passe sur la piste (lancer la lecture, cliquer CAPTURE, puis STOP ; 30 s au plus). Le signal de la piste traverse le plugin sans modification.
 - **IMPORT** : charge un fichier WAV, AIFF, FLAC, MP3 ou OGG (ou le déposer sur l'écran).
 - **Riser en un clic** : l'attaque de la phrase est retournée, passée dans une grande reverb (8 lignes à retard), puis la queue est retournée à son tour : la montée finit pile au début de la phrase.
-- **REVERSE** : longueur de la montée calée sur le tempo du projet (1 temps, 2 temps, 1, 2, 4 ou 8 mesures).
+- **REVERSE** : potard cranté (résistance entre deux crans) pour la longueur de la montée, calée sur le tempo du projet (1 temps, 2 temps, 1, 2, 4 ou 8 mesures).
 - **VOX / INST** : VOX filtre le grave et active l'anti-sifflantes automatique (les « S » ne repartent pas à l'envers dans la montée) ; INST garde tout le spectre pour les instruments.
-- **Effets en un clic** : PHONE, LO-FI, CHORUS, SHIMMER (octave dans la reverb), DRIVE (saturation qui monte avec le riser), TREMOLO (qui accélère).
+- **Effets en un clic** : PHONE, LO-FI, CHORUS, REVERB (espace à l'endroit sur la montée), DRIVE (saturation qui monte avec le riser), TREMOLO (qui accélère).
 - **LISTEN / LOOP** : écoute de la montée suivie de la phrase d'origine, dans la sortie du plugin.
 - **DRAG** : glisser le riser de la fenêtre vers la timeline de Reaper (fichier WAV 24 bits, rangé dans `Documents/Nine Hands DSP/Backdraft/Risers`).
 - 13 presets d'usine, sauvegarde et chargement de vos presets (`Documents/Nine Hands DSP/Backdraft/Presets`).

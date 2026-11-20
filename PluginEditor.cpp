@@ -70,6 +70,8 @@ BackdraftEditor::BackdraftEditor (BackdraftProcessor& p)
     L.highlight = ImageCache::getFromMemory (BinaryData::knob_highlight_png, BinaryData::knob_highlight_pngSize);
     nh::Knob::Style ks;
     ks.dragPixels = 260.0f;
+    ks.detents = true;            // crans francs avec résistance, sans flou de vitesse (demande de l'utilisateur)
+    ks.blurMax = 0.0f;
     ks.hitRadius = 0.40f;
     knob = std::make_unique<nh::Knob> (*proc.apvts.getParameter ("length"), L, ks);
     knob->onRightClick = [this] (const MouseEvent&) { showParamMidiMenu ("length", "Reverse length"); };
@@ -382,7 +384,7 @@ void BackdraftEditor::drawTopBar (Graphics& g)
     const float s = sc();
     if (logo != nullptr)
     {
-        const auto lr = U (17.0f, 27.5f - 105.0f / 22.0f, 105.0f, 105.0f / 11.0f);
+        const auto lr = U (17.0f, 27.5f - 150.0f / 22.0f, 150.0f, 150.0f / 11.0f);      // logo NINE HANDS | DSP agrandi
         logo->drawWithin (g, lr, RectanglePlacement::xLeft | RectanglePlacement::yMid, 0.82f);
     }
     // nom du preset / ligne d'état (même cadre)
@@ -1024,7 +1026,8 @@ void BackdraftEditor::timerCallback()
             lastFx[i] = on;
         }
         const float tgt = (float) on;
-        const float nv = tgt > fxLevel[i] ? jmin (1.0f, fxLevel[i] + 0.45f) : jmax (0.0f, fxLevel[i] - 0.28f);
+        // fondu vers l'état allumé / éteint, puis immobile (pas d'aller-retour qui ferait scintiller)
+        const float nv = tgt > fxLevel[i] ? jmin (tgt, fxLevel[i] + 0.45f) : jmax (tgt, fxLevel[i] - 0.28f);
         if (std::abs (nv - fxLevel[i]) > 0.001f) { fxLevel[i] = nv; askRepaint (area (fxRect (i).expanded (16.0f, 12.0f))); }
     }
     const int rc = proc.renderCount.load();
@@ -1068,7 +1071,7 @@ void BackdraftEditor::timerCallback()
 
     // fondu de la ligne d'état (même cadre que le nom du preset)
     const float target = (t - statusTime < 2.5) ? 1.0f : 0.0f;
-    const float na = target > statusAlpha ? jmin (1.0f, statusAlpha + 0.28f) : jmax (0.0f, statusAlpha - 0.11f);
+    const float na = target > statusAlpha ? jmin (target, statusAlpha + 0.28f) : jmax (target, statusAlpha - 0.11f);   // immobile une fois arrivé (pas de scintillement)
     if (std::abs (na - statusAlpha) > 0.001f || (statusAlpha > 0 && status != lastStatusDrawn))
     {
         statusAlpha = na; lastStatusDrawn = status;

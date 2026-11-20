@@ -450,7 +450,7 @@ void BackdraftProcessor::clearMidiFor (int pi)
 //==============================================================================
 const std::vector<BackdraftProcessor::FactoryPreset>& BackdraftProcessor::factoryPresets()
 {
-    //                                  len  inst   PHONE  LO-FI  CHORUS SHIMMER DRIVE  TREMOLO
+    //                                  len  inst   PHONE  LO-FI  CHORUS REVERB DRIVE  TREMOLO
     static const std::vector<FactoryPreset> p = {
         { "Ignition",       4, false, { false, false, false, false, false, false } },
         { "Slow Burn",      5, false, { false, false, true,  false, false, false } },

@@ -1,6 +1,8 @@
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <cmath>
+#include <limits>
 
 //==============================================================================
 //  nh::Knob (NINE HANDS | DSP) : potard à calques (ombre, couronne, chapeau, index, reflets)
@@ -22,6 +24,9 @@ struct KnobStyle
     float blurDecay  = 0.6f;
     float dragPixels = 250.0f;
     float hitRadius  = 0.42f;                             // zone cliquable (fraction du côté)
+    bool  detents    = false;                             // paramètre à choix : crans francs, résistance entre deux crans, pas de flou
+    float detentPixels = 42.0f;                           // course de souris pour franchir un cran
+    float detentGive   = 0.22f;                           // jeu maximal avant le cran suivant (fraction de l'écart entre crans)
 };
 
 class Knob : public juce::Component, private juce::Timer
@@ -61,12 +66,27 @@ public:
     void mouseDown (const juce::MouseEvent& e) override
     {
         if (e.mods.isPopupMenu()) { if (onRightClick) onRightClick (e); return; }
-        dragging = true; lastY = e.position.y; attachment.beginGesture();
+        dragging = true; lastY = e.position.y; dragAcc = 0.0f; attachment.beginGesture();
         if (onGesture) onGesture();
     }
     void mouseDrag (const juce::MouseEvent& e) override
     {
         if (! dragging) return;
+        if (isDetented())
+        {
+            // crans : la souris « pousse » contre le cran ; une fois la résistance vaincue, le potard saute au cran suivant
+            const float dy = e.position.y - lastY; lastY = e.position.y;
+            dragAcc -= dy * (e.mods.isShiftDown() ? 0.5f : 1.0f);
+            const int steps = param.getNumSteps();
+            int idx = currentIndex();
+            const float th = style.detentPixels;
+            while (dragAcc >= th && idx < steps - 1)  { ++idx; dragAcc -= th; setIndex (idx, true); }
+            while (dragAcc <= -th && idx > 0)          { --idx; dragAcc += th; setIndex (idx, true); }
+            // en butée : on ne s'éloigne pas plus loin que le seuil
+            dragAcc = juce::jlimit (-th * 0.999f, th * 0.999f, dragAcc);
+            if ((idx == steps - 1 && dragAcc > 0.0f) || (idx == 0 && dragAcc < 0.0f)) dragAcc *= 0.35f;
+            return;
+        }
         const auto range = style.dragPixels * (e.mods.isShiftDown() ? 5.0f : 1.0f);
         const auto dy = e.position.y - lastY; lastY = e.position.y;
         setNormalised (target - dy / range, true);
@@ -75,6 +95,7 @@ public:
     {
         if (dragging) attachment.endGesture();
         dragging = false;
+        dragAcc = 0.0f;                // le potard se recale sur son cran
         target = param.getValue();     // un paramètre à choix revient sur son cran
     }
     void mouseDoubleClick (const juce::MouseEvent& e) override { if (! e.mods.isPopupMenu()) setNormalised (param.getDefaultValue(), false); }
@@ -84,8 +105,7 @@ public:
         if (steps > 1 && steps < 64)
         {
             if (std::abs (w.deltaY) < 1.0e-4f) return;
-            const float st = 1.0f / (float) (steps - 1);
-            setNormalised (param.getValue() + (w.deltaY > 0 ? st : -st), false);
+            setIndex (juce::jlimit (0, steps - 1, currentIndex() + (w.deltaY > 0 ? 1 : -1)), false);
         }
         else setNormalised (target + w.deltaY * 0.05f, false);
         if (onGesture) onGesture();
@@ -93,6 +113,23 @@ public:
 
 private:
     float angleFor (float v) const { return style.startAngle + v * (style.endAngle - style.startAngle); }
+    bool isDetented() const { return style.detents && param.getNumSteps() > 1 && param.getNumSteps() < 64; }
+    int currentIndex() const { return juce::roundToInt (param.getValue() * (float) (param.getNumSteps() - 1)); }
+    void setIndex (int idx, bool inGesture)
+    {
+        target = (float) idx / (float) (param.getNumSteps() - 1);
+        const auto plain = param.convertFrom0to1 (target);
+        if (inGesture) attachment.setValueAsPartOfGesture (plain);
+        else           attachment.setValueAsCompleteGesture (plain);
+    }
+    // jeu dans le cran : raide, il plafonne avant le seuil puis le potard saute au cran suivant
+    float giveAngle() const
+    {
+        if (! dragging || dragAcc == 0.0f) return 0.0f;
+        const float x = std::abs (dragAcc) / style.detentPixels;
+        const float stepA = (style.endAngle - style.startAngle) / (float) (param.getNumSteps() - 1);
+        return (dragAcc > 0 ? 1.0f : -1.0f) * stepA * style.detentGive * (1.0f - std::exp (-2.4f * x)) / (1.0f - std::exp (-2.4f));
+    }
 
     void setNormalised (float v, bool inGesture)
     {
@@ -119,6 +156,19 @@ private:
         }
         if (resizeSettle > 0 && --resizeSettle == 0) { rebuildCache(); dirty = true; }
 
+        if (isDetented())
+        {
+            // crans : l'index rejoint vite son cran (petit mouvement amorti, sans flou de vitesse)
+            const float goal = angleFor (param.getValue()) + giveAngle();
+            if (std::isnan (detentAngle)) detentAngle = goal;
+            const float d = goal - detentAngle;
+            detentAngle = std::abs (d) < 0.002f ? goal : detentAngle + d * 0.55f;
+            blurSpan = 0.0f;
+            const bool ch = dirty || std::abs (detentAngle - drawnAngle) > 1.0e-4f;
+            if (ch && stack.isValid()) { renderFrame (detentAngle); drawnAngle = detentAngle; drawnSpan = 0.0f; dirty = false; repaint(); }
+            lastAngle = detentAngle;
+            return;
+        }
         // un paramètre à choix : l'index suit la valeur réelle (cran), pas la position intermédiaire de la souris
         shown = (param.getNumSteps() > 1 && param.getNumSteps() < 64) ? param.getValue() : target;
         const auto a = angleFor (shown);
@@ -207,6 +257,7 @@ private:
     float scale = 1.0f, target = 0.0f, shown = 0.0f, lastAngle = 0.0f;
     float blurSpan = 0.0f, blurDir = 1.0f, lastY = 0.0f;
     float drawnAngle = 1.0e9f, drawnSpan = -1.0f;
+    float dragAcc = 0.0f, detentAngle = std::numeric_limits<float>::quiet_NaN();
     int resizeSettle = 0, scaleTick = 0;
     bool dragging = false, dirty = true;
 };
