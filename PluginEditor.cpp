@@ -1,4 +1,6 @@
 #include "PluginEditor.h"
+#include "NineHandsDefaultSize.h"
+#include "NineHandsStatusText.h"
 #include "BinaryData.h"
 
 using namespace juce;
@@ -85,7 +87,7 @@ BackdraftEditor::BackdraftEditor (BackdraftProcessor& p)
     setResizable (true, true);
     setResizeLimits (kW, kH, kMaxW, kMaxH);
     getConstrainer()->setFixedAspectRatio ((double) kUW / kUH);
-    setScaleIndex (proc.uiSizeIdx.load());
+    setScaleIndex (nhsize::openIndex ("Backdraft", proc.uiSizeIdx.load(), 3));   // taille de l'instance, sinon taille par défaut choisie
     lastMidiAct = proc.midiActivity.load();
     startTimerHz (30);
 }
@@ -400,7 +402,7 @@ void BackdraftEditor::drawTopBar (Graphics& g)
     {
         g.setColour (kEmberHot.withAlpha (statusAlpha));
         g.setFont (font (2, 12.0f));
-        g.drawFittedText (status, pr.toNearestInt(), Justification::centredLeft, 1, 0.6f);
+        nhstatus::draw (g, status, pr, Justification::centredLeft);   // chiffres à chasse fixe
     }
     // flèches
     for (int dir : { -1, 1 })
@@ -904,8 +906,16 @@ void BackdraftEditor::showMainMenu()
     if (proc.learnParam.load() >= 0) midi.addItem (121, "Cancel MIDI learn");
     midi.addItem (122, "Clear all MIDI");
     static const char* sz[3] = { "60 %", "75 %", "100 %" };
-    const int cur = jmax (0, proc.uiSizeIdx.load());
-    for (int i = 0; i < 3; ++i) size.addItem (130 + i, sz[i], true, cur == i);
+    const int defSz = nhsize::defaultIndex ("Backdraft", 3);
+    const int cur = nhsize::openIndex ("Backdraft", proc.uiSizeIdx.load(), 3);
+    PopupMenu defSizes;
+    for (int i = 0; i < 3; ++i)
+    {
+        size.addItem (130 + i, String (sz[i]) + (i == defSz ? "  (default)" : ""), true, cur == i);
+        defSizes.addItem (nhsize::idDefault + i, sz[i], true, i == defSz);
+    }
+    size.addSeparator();
+    size.addSubMenu ("Default size", defSizes);     // taille des nouvelles fenêtres, commune à toutes les instances
     for (int i = 0; i < 4; ++i) gl.addItem (140 + i, String ((i + 1) * 25) + " %", true, proc.glowIdx.load() == i);
     m.addSubMenu ("Presets", pres);
     m.addItem (150, "Import audio file...");
@@ -922,7 +932,8 @@ void BackdraftEditor::showMainMenu()
         else if (r == 91) loadPreset();
         else if (r == 121) proc.learnParam = -1;
         else if (r == 122) for (auto& x : proc.ccMap) x = -1;
-        else if (r >= 130 && r < 133) { proc.uiSizeIdx = r == 130 ? -1 : r - 130; setScaleIndex (r - 130); }
+        else if (r >= 130 && r < 133) { proc.uiSizeIdx = r - 130; setScaleIndex (r - 130); }
+        else if (r >= nhsize::idDefault && r < nhsize::idDefault + 3) { nhsize::setDefaultIndex ("Backdraft", r - nhsize::idDefault); proc.uiSizeIdx = -1; setScaleIndex (r - nhsize::idDefault); }
         else if (r >= 140 && r < 144) proc.glowIdx = r - 140;
         else if (r == 150) importDialog();
         else if (r == 151) BackdraftProcessor::userFolder ("Risers").startAsProcess();
